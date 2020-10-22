@@ -30,6 +30,10 @@ In order to draw a single line on the left and right lanes, I modified the draw_
 
 If you'd like to include images to show how the pipeline works, here is how to include an image: 
 
+
+notes: polyfit/poly1d to extrapolate failed. voting down for first video to get Hough data.
+
+
 ![alt text][image1]
 
 
