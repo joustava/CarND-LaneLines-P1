@@ -1,56 +1,108 @@
-# **Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+# Finding Lane Lines on the Road
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+The goals / steps of this project are the following:
 
-Overview
+* Make a pipeline that finds lane lines on the road from an image or video as source.
+* Reflect on your work in a written report
+
+This work has been created with the help of the Docker image and setup described in the [Configure and Manage Your Environment with Docker](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/doc/configure_via_docker.md) document. When installed, running `make run` from the repo root directory will start the Docker container and show the results at the url found from the cli output. Please read the original [assignment instructions](./ASSIGNMENT.md) for more context.
+
+## Pipeline
+
+### 1. Grayscale
+
+The first step after loading an image is to convert it to grayscale. We could load the image directly as grayscale however, as we need to blend the results into the original image we'd like it to be available too.
+
+<img src="./output/grayscale.jpg"
+     alt="Apply grayscaling step in Pipeline"
+     style="margin: 20px;" />
+
+### 2. Gaussian Blur
+
+Bluring will smooth out sudden sporadic changes in intensity and will make the following edge detection work with less noise in which we're not interested. What it does is applying a transformation kernel (matrix) to each pixel of the image.
+
+<img src="./output/gaussian.jpg"
+     alt="Example of Gaussian blurring step in Pipeline"
+     style="margin: 20px;" />
+
+### 3. Canny Edge detection
+
+With the canny edge detection we start our collection of data of interest  with which we can detect lines in the future.
+
+<img src="./output/canny.jpg"
+     alt="Example of edge detection step in Pipeline"
+     style="margin: 20px;" />
+
+### 4. Select ROI
+
+Applying the Canny edge detection will usually return more edges than we need to process, thus we focus our attention to an region of interest demarked by vertices which route from the bottom left, bottom right and the approximate center of where the line marking converge on the horizon. If the bottom demarking is too close/narrow then small horizontal movements would lose track of the markers thus its better to choose the whole width at the bottom of the ROI.
+
+<img src="./output/roi.jpg"
+     alt="Example of ROI selection step in Pipeline"
+     style="margin: 20px;" />
+
+### 5. Hough Transform
+
+With the help of cv2 `HoughLinesP`, we try to detect straight lines from the edges found in the ROI.
+The function is dependend on finding a couple of parameters values that worked well with the testing images and first two videos.
+
+```python
+rho = 1            # distance resolution in pixels of the Hough grid
+theta = np.pi/180  # angular resolution in radians of the Hough grid
+threshold = 15     # minimum number of votes
+min_line_len = 15  # minimum number of pixels to concider as line
+max_line_gap = 1   # maximum pixel space between connectable line segments.
+```
+
+<img src="./output/hough.jpg"
+     alt="Example of feature detection step in Pipeline"
+     style="margin: 20px;" />
+
+### 6. Extrapolation
+
+From the data obtained in the Hough transformations step, we need to filter the lines of interest and average/extrapolate them in order to mark the driving lane boundaries at each side of the vehicle.
+
+The lines found by applying the cv2 `HoughLinesP` filter are first sorted by their slope in the `separate_lines` function: a line with a positive slope belongs to the the lane marking on the right side of the vehicle, lines with negative slopes are at the left side. This seems counterintuitive at first until it is realized that the y-axis is mirrored over the x-axis while working with images.
+
+Then all line centers and their slopes are calculated and averaged in `extrapolate_lines` and the once we obtained an average center and slope a line is extrapolated in the `extrapolate_line` helper where we find the y intercept of the averaged line. Then the y intercept is used to find the x at maximum and minimum required height (y).
+
+<img src="./output/extrapolate.jpg"
+     alt="Example of feature extrapolation step in Pipeline"
+     style="margin: 20px;" />
+
+### 6. Blending
+
+The last step in the pipeline combines the extrapolated lines with the original image with the use of the
+cv2 `addWeighted` function. It will blend both images based on the weight and gamma given to either input.
+Once the algorithm is working as expected and detects the lines correctly we might not need this step/information, it is however a great way to showcase the result.
+
+<img src="./output/result.jpg"
+     alt="Example of end result in Pipeline"
+     style="margin: 20px;" />
+
+## Shorcomings
+
+* Changing lanes will lead to loosing track of markers
+* Changing heading will lead to loosing track of markers
+* Road surface changes have negative impact on detection pipeline
+* Lighting conditions have negative impact on detection pipeline
+* When other vehicles block the lines we'll either lose the information
+* Truck trailer edges being detected as a road marker
+
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+* Optional Challenge crashes near the grey road surface and sudden detections of cracks around 3-4 seconds into the video.
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
+## Improvements
 
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
+In order to deal with sudden road surface and lighting conditions related issues we could keep track
+of a running average that we could plug in whenever there is some data loss in our pipeline. This cannot be done continuously. Might also be possible to try normalize the light intensity.
+Earlier in the course it was mentioned that these systems have data related to the road surface and have access to gps, it might be possible to dynamically adapt the pipeline parameters based on this information.
 
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
+## Sources
 
-
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-
-1. Describe the pipeline
-
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
-
-
-The Project
----
-
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
-
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) if you haven't already.
-
-**Step 2:** Open the code in a Jupyter Notebook
-
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out [Udacity's free course on Anaconda and Jupyter Notebooks](https://classroom.udacity.com/courses/ud1111) to get started.
-
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
-
-`> jupyter notebook`
-
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
-
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
+* [Hough transform](https://en.wikipedia.org/wiki/Hough_transform)
+* [Linear equation](https://en.wikipedia.org/wiki/Linear_equation)
+* [Canny edge detector](https://en.wikipedia.org/wiki/Canny_edge_detector)
+* [Gaussian blur](https://en.wikipedia.org/wiki/Gaussian_blur)
+* [Udacity, Introduction to computer vision (free)](https://www.udacity.com/course/introduction-to-computer-vision--ud810)
