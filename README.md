@@ -106,3 +106,11 @@ Earlier in the course it was mentioned that these systems have data related to t
 * [Canny edge detector](https://en.wikipedia.org/wiki/Canny_edge_detector)
 * [Gaussian blur](https://en.wikipedia.org/wiki/Gaussian_blur)
 * [Udacity, Introduction to computer vision (free)](https://www.udacity.com/course/introduction-to-computer-vision--ud810)
+
+## Further exploration
+
+* [How Hough Transform works](https://www.youtube.com/watch?v=4zHbI-fFIlI)
+* [Hough Line Transform](https://docs.opencv.org/3.4.0/d9/db0/tutorial_hough_lines.html)
+* [Robust Extrapolation of Lines in Video Using Probabilistic Hough Transform](https://medium.com/@esmat.anis/robust-extrapolation-of-lines-in-video-using-linear-hough-transform-edd39d642ddf)
+* [RANSAC Tutorial](http://www.math-info.univ-paris5.fr/~lomn/Cours/CV/SeqVideo/Material/RANSAC-tutorial.pdf)
+* [RANSAC for dummies](http://www.math-info.univ-paris5.fr/~lomn/Cours/CV/SeqVideo/Material/RANSAC-tutorial.pdf)
